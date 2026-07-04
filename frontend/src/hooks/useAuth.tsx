@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (profileQuery.isError) {
       clearAuthToken();
+      setHasToken(false);
       queryClient.removeQueries({ queryKey: ["auth"] });
     }
   }, [profileQuery.isError, queryClient]);
@@ -81,6 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryFn: authApi.getProfile
     });
   }, [queryClient]);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (token !== null && token !== "") {
+      setHasToken(true);
+    }
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({

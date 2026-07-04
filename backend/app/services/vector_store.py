@@ -127,6 +127,8 @@ class VectorStoreService:
     def search(self, query: str, top_k: int = 6) -> list[RetrievedChunk]:
         if not query or not query.strip():
             return []
+        if not self._has_domain_context(query):
+            return []
 
         collection = self._get_collection()
         if collection.count() == 0:
@@ -143,7 +145,7 @@ class VectorStoreService:
                 if not document:
                     continue
                 similarity = self._distance_to_similarity(distance)
-                if similarity < 0.15 and self._lexical_overlap(query, document) < 0.1:
+                if similarity < 0.15 and self._lexical_overlap(query, document) < 0.25:
                     continue
                 retrieved.append(
                     RetrievedChunk(
@@ -162,7 +164,7 @@ class VectorStoreService:
         for path, content in self._documents_to_index():
             for chunk in self._chunk_text(content):
                 overlap = self._lexical_overlap(query, chunk)
-                if overlap > 0.05:
+                if overlap > 0.25:
                     scored.append(
                         (
                             overlap,
@@ -177,6 +179,26 @@ class VectorStoreService:
 
         scored.sort(key=lambda item: item[0], reverse=True)
         return [chunk for _, chunk in scored[:top_k]]
+
+    def _has_domain_context(self, query: str) -> bool:
+        query_terms = set(re.findall(r"[a-z0-9]+", query.lower()))
+        domain_terms = {
+            "career",
+            "careerpilot",
+            "resume",
+            "roadmap",
+            "interview",
+            "job",
+            "skills",
+            "profile",
+            "ai",
+            "gemini",
+            "rag",
+            "backend",
+            "frontend",
+            "project",
+        }
+        return bool(query_terms & domain_terms)
 
     def _lexical_overlap(self, query: str, document: str) -> float:
         query_terms = set(re.findall(r"[a-z0-9]+", query.lower()))

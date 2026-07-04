@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
-from app.core.security import create_access_token, create_password_reset_token
+from app.core.security import create_access_token, create_password_reset_token, decode_token
 from app.models.user import User
 from app.repositories.user_repository import user_repository
 from app.schemas.token import Token
@@ -102,4 +102,5 @@ def reset_password(
             detail="User not found.",
         )
 
-    return user_repository.update_password(db, user, auth_service.hash_password(request.password))
+    user_repository.update_password(db, user, auth_service.hash_password(request.password))
+    return user

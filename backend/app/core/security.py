@@ -4,6 +4,10 @@ from typing import Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+
+class TokenError(ValueError):
+    pass
+
 from app.core.config import settings
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

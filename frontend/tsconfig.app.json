@@ -14,9 +14,9 @@
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "ignoreDeprecations": "6.0",
     "noEmit": true,
     "jsx": "react-jsx",
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

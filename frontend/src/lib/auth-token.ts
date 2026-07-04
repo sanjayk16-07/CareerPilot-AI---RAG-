@@ -1,6 +1,13 @@
 const AUTH_TOKEN_KEY = "careerpilot_access_token";
 
-let inMemoryToken: string | null = sessionStorage.getItem(AUTH_TOKEN_KEY);
+function readStoredToken() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return window.sessionStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+let inMemoryToken: string | null = readStoredToken();
 
 export function getAuthToken() {
   return inMemoryToken;
@@ -8,11 +15,15 @@ export function getAuthToken() {
 
 export function setAuthToken(token: string) {
   inMemoryToken = token;
-  sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+  if (typeof window !== "undefined") {
+    window.sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+  }
 }
 
 export function clearAuthToken() {
   inMemoryToken = null;
-  sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  if (typeof window !== "undefined") {
+    window.sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  }
 }
 
