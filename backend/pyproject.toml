@@ -1,0 +1,24 @@
+[project]
+name = "careerpilot-ai-backend"
+version = "0.1.0"
+description = "FastAPI backend foundation for CareerPilot AI."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.124.4",
+  "uvicorn[standard]==0.38.0",
+  "sqlalchemy==2.0.45",
+  "pydantic==2.12.5",
+  "pydantic-settings==2.12.0",
+  "email-validator==2.3.0",
+  "python-jose[cryptography]==3.5.0",
+  "passlib[bcrypt]==1.7.4",
+  "bcrypt==4.0.1",
+  "python-multipart==0.0.20",
+  "langchain==1.2.0",
+  "langchain-google-genai==4.0.0",
+  "chromadb==1.3.7"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

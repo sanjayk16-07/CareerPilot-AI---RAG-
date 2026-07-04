@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="50%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(10, 15) scale(0.14)">
+    <circle cx="256" cy="256" r="240" fill="url(#logoGrad)" />
+    <path d="M256 120 L370 340 L256 290 L142 340 Z" fill="#ffffff" />
+    <path d="M256 120 L256 290 L370 340 Z" fill="#e0e7ff" opacity="0.4" />
+  </g>
+  <text x="100" y="58" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="800" fill="#0f172a">
+    CareerPilot<tspan fill="url(#logoGrad)">.AI</tspan>
+  </text>
+</svg>

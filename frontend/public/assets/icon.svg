@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="100%" height="100%">
+  <defs>
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="planeI" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="100%" stop-color="#93c5fd"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect x="4" y="4" width="72" height="72" rx="16" ry="16" fill="url(#iconBg)"/>
+  <!-- G letter shape scaled and centered -->
+  <g transform="translate(14,12) scale(0.72)">
+    <path d="M55 12 A28 28 0 1 0 55 68 L55 44 L38 44 L38 52 L47 52 L47 60 A20 20 0 1 1 47 20 L47 28 L38 28 L38 20 Z" fill="#ffffff" opacity="0.9"/>
+  </g>
+  <!-- Paper plane inside G -->
+  <g transform="translate(28,30) rotate(-30) scale(0.75)">
+    <polygon points="0,0 22,8 0,14" fill="#ffffff" opacity="0.95"/>
+    <polygon points="0,8 22,8 0,14" fill="#bfdbfe" opacity="0.5"/>
+  </g>
+  <!-- Sparkle top-right corner -->
+  <path d="M62 10 L64 14 L68 16 L64 18 L62 22 L60 18 L56 16 L60 14 Z" fill="#e9d5ff" opacity="0.9"/>
+</svg>

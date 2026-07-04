@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="100%" height="100%">
+  <defs>
+    <linearGradient id="gGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="planeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+  </defs>
+  <!-- G letter shape -->
+  <path d="M55 12 A28 28 0 1 0 55 68 L55 44 L38 44 L38 52 L47 52 L47 60 A20 20 0 1 1 47 20 L47 28 L38 28 L38 20 Z" fill="url(#gGrad)" transform="translate(0,0) scale(0.9)"/>
+  <!-- Paper plane inside G -->
+  <g transform="translate(24,24) rotate(-30)">
+    <polygon points="0,0 22,8 0,14" fill="url(#planeGrad)" opacity="0.95"/>
+    <polygon points="0,8 22,8 0,14" fill="#ffffff" opacity="0.3"/>
+  </g>
+  <!-- Sparkle star top-right of G -->
+  <path d="M72 10 L74 14 L78 16 L74 18 L72 22 L70 18 L66 16 L70 14 Z" fill="#a78bfa" opacity="0.9"/>
+  <!-- "CareerPilot" text -->
+  <text x="92" y="44" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="26" font-weight="800" letter-spacing="-0.5">
+    <tspan fill="#1e1b4b">Career</tspan><tspan fill="#2563eb">Pilot</tspan>
+  </text>
+  <!-- Tagline -->
+  <text x="92" y="60" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="9" font-weight="500" fill="#6b7280" letter-spacing="1.5">YOUR AI CO-PILOT FOR CAREER SUCCESS</text>
+</svg>

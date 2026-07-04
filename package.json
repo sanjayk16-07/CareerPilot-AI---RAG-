@@ -1,0 +1,23 @@
+{
+  "name": "careerpilot-ai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Production-ready monorepo foundation for CareerPilot AI.",
+  "scripts": {
+    "dev": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "preview": "npm run preview --workspace frontend",
+    "lint": "npm run lint --workspace frontend",
+    "typecheck": "npm run typecheck --workspace frontend",
+    "backend:dev": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "backend:check": "cd backend && python -m compileall app"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  }
+}
+
