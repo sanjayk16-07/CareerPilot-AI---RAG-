@@ -3,7 +3,9 @@ import json
 import unittest
 from pathlib import Path
 import sys
+from unittest.mock import AsyncMock, patch
 
+from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -49,6 +51,51 @@ class RAGServiceTests(unittest.TestCase):
             parsed = json.loads(analysis.suggestions)
             self.assertIn("strengths", parsed)
             self.assertIn("improvements", parsed)
+        finally:
+            db.close()
+
+    def test_roadmap_generation_requires_gemini_configuration(self):
+        engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(bind=engine)
+        Session = sessionmaker(bind=engine)
+
+        db = Session()
+        try:
+            with patch("app.services.career_service.gemini_service.is_configured", return_value=False):
+                with self.assertRaises(HTTPException) as ctx:
+                    asyncio.run(
+                        career_service.generate_roadmap(
+                            db,
+                            user_id=1,
+                            current_skills="Python, FastAPI",
+                            target_role="Machine Learning Engineer",
+                        )
+                    )
+            self.assertEqual(ctx.exception.status_code, 503)
+        finally:
+            db.close()
+
+    def test_interview_turn_returns_fallback_when_gemini_is_empty(self):
+        engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(bind=engine)
+        Session = sessionmaker(bind=engine)
+
+        db = Session()
+        try:
+            with patch("app.services.career_service.gemini_service.generate_content", new=AsyncMock(return_value="")):
+                session, evaluation, is_finished, reply = asyncio.run(
+                    career_service.process_interview_turn(
+                        db,
+                        user_id=1,
+                        role_target="Software Engineer",
+                        message="I have worked with Python and SQL.",
+                    )
+                )
+
+            self.assertTrue(reply)
+            self.assertFalse(is_finished)
+            self.assertIsNotNone(session.history)
+            self.assertIsNotNone(evaluation)
         finally:
             db.close()
 

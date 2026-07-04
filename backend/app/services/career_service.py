@@ -114,54 +114,48 @@ class CareerService:
         return analysis
 
 
+    def _parse_roadmap_payload(self, response_text: str) -> dict[str, Any]:
+        cleaned = response_text.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+
+        try:
+            roadmap_data = json.loads(cleaned)
+        except json.JSONDecodeError as exc:
+            logger.error("Failed to parse Gemini response for roadmap: %s", exc)
+            raise ValueError("Gemini returned an invalid roadmap payload.") from exc
+
+        if not isinstance(roadmap_data, dict):
+            raise ValueError("Gemini returned an invalid roadmap payload.")
+
+        steps = roadmap_data.get("steps")
+        if not isinstance(steps, list) or not steps:
+            raise ValueError("Gemini roadmap payload is missing steps.")
+
+        return roadmap_data
+
     async def generate_roadmap(self, db: Session, user_id: int, current_skills: str, target_role: str) -> CareerRoadmap:
         """
-        Generates a step-by-step career path roadmap using Gemini.
+        Generates a personalized step-by-step career path roadmap using Gemini.
         """
         if not gemini_service.is_configured():
-            roadmap_data = {
-                "role": target_role,
-                "timeframe": "3-6 Months",
-                "difficulty": "Intermediate",
-                "steps": [
-                    {
-                        "phase": "Foundation",
-                        "title": "Build and document core experience",
-                        "description": "Strengthen the core skills that support the target role and create visible proof of work.",
-                        "skills_to_acquire": ["Core domain fundamentals"],
-                        "projects_to_build": ["A portfolio project aligned to the target role"],
-                        "certifications": [],
-                        "resources": ["Official documentation", "Project-based tutorials"],
-                        "interview_prep": ["Practice explaining your project decisions"],
-                    }
-                ],
-            }
-            roadmap = CareerRoadmap(
-                user_id=user_id,
-                current_skills=current_skills,
-                target_role=target_role,
-                roadmap_data=json.dumps(roadmap_data)
-            )
-            db.add(roadmap)
-            db.commit()
-            db.refresh(roadmap)
-            return roadmap
+            raise HTTPException(status_code=503, detail="Gemini roadmap generation is unavailable right now.")
 
         prompt = (
-            "You are an expert career coach.\n"
-            f"Create a comprehensive step-by-step career roadmap for a user transitioning from skills:\n\"{current_skills}\"\n"
-            f"to the target role: \"{target_role}\".\n"
-            "Include:\n"
-            "- A realistic timeframe.\n"
-            "- Complexity level.\n"
-            "- Detailed phases with:\n"
-            "  - Phase title and description.\n"
-            "  - Specific skills to acquire.\n"
-            "  - Recommended projects to build.\n"
-            "  - Suggested certifications.\n"
-            "  - Recommended resources (links not required, just names).\n"
-            "- Specific interview preparation topics.\n"
-            "\nProvide your roadmap as a valid JSON object only. Do NOT include markdown code blocks or any extra text. "
+            "You are an expert career coach and technical recruiter.\n"
+            "Create a personalized roadmap that is unique to the user's background and target role.\n"
+            f"Current skills: {current_skills}\n"
+            f"Target role: {target_role}\n"
+            "Requirements:\n"
+            "- Tailor the plan to the gap between the user's current skills and the target role.\n"
+            "- Make the roadmap distinct, practical, and specific to the role.\n"
+            "- Include a realistic timeframe, a difficulty level, and 4-6 phases.\n"
+            "- Each phase must include title, description, skills to acquire, projects to build, certifications, resources, and interview preparation topics.\n"
+            "- Do not reuse generic boilerplate.\n"
+            "Provide your roadmap as a valid JSON object only. Do NOT include markdown code blocks or any extra text.\n"
             "The JSON must have the following structure:\n"
             "{\n"
             "  \"role\": \"Target Role\",\n"
@@ -184,20 +178,13 @@ class CareerService:
 
         response_text = await gemini_service.generate_content(prompt)
         if not response_text:
-            raise HTTPException(status_code=500, detail="Failed to generate roadmap.")
-
-        cleaned = response_text.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
+            raise HTTPException(status_code=502, detail="Gemini roadmap generation failed. Please try again.")
 
         try:
-            roadmap_data = json.loads(cleaned)
-        except Exception as e:
-            logger.error(f"Failed to parse Gemini response for roadmap: {e}. Raw response: {response_text}")
-            raise HTTPException(status_code=500, detail="Failed to parse roadmap.")
+            roadmap_data = self._parse_roadmap_payload(response_text)
+        except ValueError as exc:
+            logger.error("Failed to parse Gemini roadmap response: %s", exc)
+            raise HTTPException(status_code=502, detail="Gemini returned an invalid roadmap format.") from exc
 
         roadmap = CareerRoadmap(
             user_id=user_id,
@@ -244,7 +231,12 @@ class CareerService:
         user_messages = [item["content"] for item in history if item.get("role") == "user"]
         if not user_messages:
             return role_target
-        latest = user_messages[-1]
+
+        recent_messages = user_messages[-3:]
+        latest = " ".join(message.strip() for message in recent_messages if message.strip())
+        if not latest:
+            return role_target
+
         return f"{role_target} {latest}".strip()
 
     async def process_interview_turn(self, db: Session, user_id: int, role_target: str, message: str, session_id: int | None = None) -> tuple[InterviewSession, dict[str, Any], bool, str | None]:
@@ -258,19 +250,24 @@ class CareerService:
         history.append({"role": "user", "content": message})
 
         retrieved_chunks = vector_store_service.search(self._build_retrieval_query(history, role_target), top_k=4)
+        recent_history = history[-6:]
+        context_text = self._format_context(retrieved_chunks)
 
         prompt = f"""
-        You are an expert interviewer for the role of {role_target}.
+        You are an expert interviewer and career coach for the role of {role_target}.
+
+        Use the knowledge base context below to ground your feedback. If the context is weak or missing, still answer helpfully based on the conversation and the target role.
 
         Knowledge base context:
-        {self._format_context(retrieved_chunks)}
+        {context_text}
 
         Conversation history:
-        {json.dumps(history[-6:], indent=2)}
+        {json.dumps(recent_history, indent=2)}
 
-        1. Evaluate the user's latest answer (if present) with a score from 1-10 and feedback.
-        2. Ask the next interview question.
-        3. After 5 questions, stop the interview and generate a final assessment.
+        Task:
+        1. Evaluate the user's latest answer with a score from 1-10 and concise feedback.
+        2. Ask the next interview question that feels natural and specific to the role.
+        3. After 5 questions, stop the interview and generate a final assessment summary.
 
         Return ONLY valid JSON.
 
@@ -290,18 +287,20 @@ class CareerService:
             cleaned = response_text.replace("```json", "").replace("```", "").strip()
             result = json.loads(cleaned)
         except Exception as e:
-            logger.error(f"Error in interview processing: {e}")
-            return session, {"score": 0, "feedback": "Error processing answer"}, False, None
+            logger.error("Error in interview processing: %s", e)
+            result = {
+                "evaluation": {"score": 5, "feedback": "Your answer was received, but the interviewer could not generate a detailed response. Please continue and share more specifics."},
+                "next_question": self._build_fallback_question(role_target, message),
+                "is_finished": False,
+                "final_report": None,
+            }
 
-        reply = result.get("next_question") or result.get("final_report") or ""
-        is_finished = result.get("is_finished", False)
-        evaluation = result.get("evaluation")
+        reply = result.get("next_question") or result.get("final_report") or self._build_fallback_question(role_target, message)
+        is_finished = bool(result.get("is_finished", False))
+        evaluation = result.get("evaluation") or {"score": 5, "feedback": "Keep going and provide more detail about your experience."}
         final_report = result.get("final_report")
 
-        # Append assistant reply
         history.append({"role": "assistant", "content": reply})
-
-        # Save to database
         session.history = json.dumps(history)
         if is_finished:
             session.is_active = False
@@ -316,8 +315,17 @@ class CareerService:
         if not retrieved_chunks:
             return "No relevant context found."
 
-        formatted_chunks = [chunk.text for chunk in retrieved_chunks]
-        return "\n\n".join(formatted_chunks)
+        formatted_chunks = []
+        for chunk in retrieved_chunks:
+            if hasattr(chunk, "text") and chunk.text:
+                formatted_chunks.append(f"Source: {getattr(chunk, 'source_name', 'unknown')}\n{chunk.text}")
+        return "\n\n".join(formatted_chunks) if formatted_chunks else "No relevant context found."
+
+    def _build_fallback_question(self, role_target: str, message: str) -> str:
+        normalized = message.strip()
+        if not normalized:
+            return f"Tell me about your experience relevant to the {role_target} role and the impact you made."
+        return f"Thanks for sharing that. Can you describe a project where you used those skills and the results you delivered for the {role_target} role?"
 
 
 career_service = CareerService()

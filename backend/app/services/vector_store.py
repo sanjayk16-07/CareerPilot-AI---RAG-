@@ -135,7 +135,7 @@ class VectorStoreService:
             self.index_documents()
 
         try:
-            results = collection.query(query_texts=[query], n_results=min(max(top_k, 4), 6))
+            results = collection.query(query_texts=[query], n_results=min(max(top_k, 4), 8))
             documents = results.get("documents", [[]])[0]
             metadatas = results.get("metadatas", [[]])[0]
             distances = results.get("distances", [[]])[0]
@@ -145,16 +145,19 @@ class VectorStoreService:
                 if not document:
                     continue
                 similarity = self._distance_to_similarity(distance)
-                if similarity < 0.15 and self._lexical_overlap(query, document) < 0.25:
+                lexical_overlap = self._lexical_overlap(query, document)
+                if similarity < 0.12 and lexical_overlap < 0.20:
                     continue
                 retrieved.append(
                     RetrievedChunk(
                         text=document,
                         source_name=str(metadata.get("source_name", "unknown")),
                         source_path=str(metadata.get("source_path", "")),
-                        score=similarity,
+                        score=max(similarity, lexical_overlap),
                     )
                 )
+            if not retrieved:
+                return self._lexical_search(query, top_k)
             return retrieved[:top_k]
         except Exception:
             return self._lexical_search(query, top_k)
@@ -197,6 +200,13 @@ class VectorStoreService:
             "backend",
             "frontend",
             "project",
+            "chat",
+            "conversation",
+            "mock",
+            "portfolio",
+            "developer",
+            "engineer",
+            "product",
         }
         return bool(query_terms & domain_terms)
 

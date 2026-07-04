@@ -18,16 +18,12 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Link } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 
-const SAMPLE_ROADMAPS = [
-  { skills: "HTML, CSS, basic JavaScript", role: "Frontend Developer" },
-  { skills: "Python, SQL", role: "DevOps Engineer" }
-];
-
 export function RoadmapPage() {
   const { logout } = useAuth();
   const [currentSkills, setCurrentSkills] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [roadmaps, setRoadmaps] = useState<RoadmapResponse[]>([]);
   const [selectedRoadmap, setSelectedRoadmap] = useState<RoadmapResponse | null>(null);
 
@@ -40,6 +36,7 @@ export function RoadmapPage() {
       }
     } catch (e) {
       console.error("Failed to load roadmaps:", e);
+      setError("Unable to load your saved roadmaps right now.");
     }
   }
 
@@ -52,12 +49,14 @@ export function RoadmapPage() {
     if (!currentSkills.trim() || !targetRole.trim()) return;
 
     setLoading(true);
+    setError(null);
     try {
       const result = await careerApi.generateRoadmap(currentSkills, targetRole);
       setSelectedRoadmap(result);
       setRoadmaps((prev) => [result, ...prev]);
     } catch (e) {
       console.error("Failed to generate roadmap:", e);
+      setError("Roadmap generation failed. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -110,23 +109,8 @@ export function RoadmapPage() {
                   <Compass className="h-5 w-5 text-blue-400" /> Plan Roadmap
                 </h2>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Sample Configurations</label>
-                  <div className="flex flex-wrap gap-2">
-                    {SAMPLE_ROADMAPS.map((sample, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => {
-                          setCurrentSkills(sample.skills);
-                          setTargetRole(sample.role);
-                        }}
-                        className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-md px-2 py-1 transition"
-                      >
-                        {sample.role}
-                      </button>
-                    ))}
-                  </div>
+                <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs text-slate-400">
+                  Add your current skills and the role you want to target to generate a unique roadmap tailored to your background.
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -155,6 +139,12 @@ export function RoadmapPage() {
                       className="w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3 text-xs text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none transition"
                     />
                   </div>
+
+                  {error ? (
+                    <div className="rounded-lg border border-red-500/30 bg-red-950/40 px-3 py-2 text-sm text-red-300" role="alert">
+                      {error}
+                    </div>
+                  ) : null}
 
                   <Button
                     type="submit"
